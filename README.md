@@ -4,7 +4,7 @@ This project is used to explore the implementation of a Kubernetes [admission we
 ## Getting Started
 To build the Docker image of the admission webhook server:
 ```
-$ make image
+$ make image/build
 ```
 
 To generate self-signed TLS artifacts:
@@ -14,6 +14,16 @@ $ make tls/ca
 
 # generate the TLS cert for the webhook server, signed by the custom CA
 $ make tls/server
+```
+
+To run the admission webhook Docker conainer:
+```
+$ make container/run
+```
+
+Cleaning up the Docker container:
+```
+$ make container/clean
 ```
 
 ## References

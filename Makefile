@@ -1,12 +1,24 @@
-VERSION = 0.0.1
+VERSION ?= 0.0.1
 
-image:
+image: image/build image/push
+
+image/build:
 	docker build --rm \
 		--build-arg BUILD_DATE="`date +'%Y-%m-%d %T %z'`" \
 		--build-arg VCS_REF=`git rev-parse --short HEAD` \
 		--build-arg VCS_URL="https://github.com/ihcsim/admission-webhook" \
 		--build-arg VERSION="$(VERSION)" \
-		-t isim/admission-webhook .
+		-t isim/admission-webhook:$(VERSION) .
+
+image/push:
+	docker push isim/admission-webhook:$(VERSION)
+
+container/run:
+	docker run -d --name admission-webhook -v `pwd`/tls/server:/etc/secret isim/admission-webhook:$(VERSION)
+
+container/clean:
+	docker stop admission-webhook
+	docker rm admission-webhook
 
 tls/ca: tls/ca/key tls/ca/cert
 

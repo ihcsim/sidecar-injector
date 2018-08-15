@@ -28,8 +28,8 @@ var (
 
 func init() {
 	flag.StringVar(&port, "port", "443", "Port that this webhook admission server listens on")
-	flag.StringVar(&certFile, "cert-file", "/etc/secret/webhook-server.crt", "Location of the TLS cert file")
-	flag.StringVar(&keyFile, "key-file", "/etc/secret/webhook-server.key", "Location of the TLS private key file")
+	flag.StringVar(&certFile, "cert-file", "/etc/secret/server.crt", "Location of the TLS cert file")
+	flag.StringVar(&keyFile, "key-file", "/etc/secret/server.key", "Location of the TLS private key file")
 	flag.Parse()
 
 	log.SetOutput(os.Stdout)
