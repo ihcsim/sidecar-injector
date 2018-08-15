@@ -37,6 +37,9 @@ func init() {
 }
 
 func main() {
+	log.Infof("Listening at port %s... ", port)
+	log.Infof("Using TLS cert at %s and key at %s...", certFile, keyFile)
+
 	s, err := server(port, certFile, keyFile)
 	if err != nil {
 		log.Fatal(err)
@@ -133,16 +136,20 @@ func inject(ar *admissionv1beta1.AdmissionReview) (*admissionv1beta1.AdmissionRe
 		return nil, err
 	}
 
-	patch := []byte(`Hello World`)
+	var (
+		patch     = []byte(`Hello World`)
+		patchType = admissionv1beta1.PatchTypeJSONPatch
+	)
 	admissionResponse := &admissionv1beta1.AdmissionResponse{
-		Allowed: true,
-		Patch:   patch,
+		Allowed:   true,
+		Patch:     patch,
+		PatchType: &patchType,
 	}
 
 	return admissionResponse, nil
 }
 
-func tlsServer(certFile, keyFile, port string) (*http.Server, error) {
+func tlsServer(port, certFile, keyFile string) (*http.Server, error) {
 	c, err := tlsConfig(certFile, keyFile)
 	if err != nil {
 		return nil, err
