@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -20,6 +21,7 @@ var (
 	port     = ""
 	certFile = ""
 	keyFile  = ""
+	debug    = ""
 
 	log = logrus.New()
 
@@ -28,12 +30,18 @@ var (
 
 func init() {
 	flag.StringVar(&port, "port", "443", "Port that this webhook admission server listens on")
-	flag.StringVar(&certFile, "cert-file", "/etc/secret/server.crt", "Location of the TLS cert file")
-	flag.StringVar(&keyFile, "key-file", "/etc/secret/server.key", "Location of the TLS private key file")
+	flag.StringVar(&certFile, "cert-file", "/etc/secret/tls.crt", "Location of the TLS cert file")
+	flag.StringVar(&keyFile, "key-file", "/etc/secret/tls.key", "Location of the TLS private key file")
+	flag.StringVar(&debug, "debug", "false", "Set to 'true' to enable more verbose debug mode")
 	flag.Parse()
 
+	if strings.ToLower(debug) == "true" {
+		log.SetLevel(logrus.DebugLevel)
+		log.Debug("Starting in debug mode...")
+	} else {
+		log.SetLevel(logrus.InfoLevel)
+	}
 	log.SetOutput(os.Stdout)
-	log.SetLevel(logrus.InfoLevel)
 }
 
 func main() {
@@ -65,17 +73,15 @@ func serve(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	requestLogger.Debugf("Request data: %+v", data)
+	requestLogger.Debugf("HTTP Request body: %s", data)
 
 	response := mutate(data)
-	requestLogger.Debugf("Admission review: %+v", response)
-
 	responseJSON, err := json.Marshal(response)
 	if err != nil {
 		handleRequestError(res, err, http.StatusInternalServerError, requestLogger)
 		return
 	}
-	requestLogger.Debugf("Response: %+v", responseJSON)
+	requestLogger.Debugf("HTTP Response body: %s", responseJSON)
 
 	if _, err := res.Write(responseJSON); err != nil {
 		handleRequestError(res, err, http.StatusInternalServerError, requestLogger)
@@ -84,34 +90,38 @@ func serve(res http.ResponseWriter, req *http.Request) {
 }
 
 func mutate(data []byte) *admissionv1beta1.AdmissionReview {
-	arIn, err := decode(data)
+	admissionReview, err := decode(data)
 	if err != nil {
 		log.Info("Failed to decode data. Reason: ", err)
-		return &admissionv1beta1.AdmissionReview{
-			Response: &admissionv1beta1.AdmissionResponse{
-				UID: arIn.Request.UID,
-				Result: &metav1.Status{
-					Message: err.Error(),
-				},
+		admissionReview.Response = &admissionv1beta1.AdmissionResponse{
+			UID: admissionReview.Request.UID,
+			Result: &metav1.Status{
+				Message: err.Error(),
 			},
 		}
+		return admissionReview
 	}
 
-	admissionResponse, err := inject(arIn)
+	admissionResponse, err := inject(admissionReview)
 	if err != nil {
-		return &admissionv1beta1.AdmissionReview{
-			Response: &admissionv1beta1.AdmissionResponse{
-				UID: arIn.Request.UID,
-				Result: &metav1.Status{
-					Message: err.Error(),
-				},
+		admissionReview.Response = &admissionv1beta1.AdmissionResponse{
+			UID: admissionReview.Request.UID,
+			Result: &metav1.Status{
+				Message: err.Error(),
 			},
 		}
+		return admissionReview
 	}
+	admissionReview.Response = admissionResponse
+	admissionReview.Response.UID = admissionReview.Request.UID
 
-	return &admissionv1beta1.AdmissionReview{
-		Response: admissionResponse,
-	}
+	requestJSON, _ := json.Marshal(admissionReview.Request)
+	log.Debugf("Admission request: %s", requestJSON)
+
+	responseJSON, _ := json.Marshal(admissionReview.Response)
+	log.Debugf("Admission response: %s", responseJSON)
+
+	return admissionReview
 }
 
 func decode(data []byte) (*admissionv1beta1.AdmissionReview, error) {

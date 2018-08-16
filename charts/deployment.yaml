@@ -1,0 +1,100 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: admission-webhook
+  namespace: default
+  labels:
+    app: admission-webhook
+type: kubernetes.io/tls
+data:
+  tls.crt: ${TLS_CERT}
+  tls.key: ${TLS_KEY}
+
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: admission-webhook
+  namespace: default
+  labels:
+    app: admission-webhook
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: admission-webhook
+  namespace: default
+  labels:
+    app: admission-webhook
+spec:
+  selector:
+    app: admission-webhook
+  ports:
+  - port: 443
+    targetPort: https
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: admission-webhook
+  namespace: default
+  labels:
+    app: admission-webhook
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: admission-webhook
+  template:
+    metadata:
+      labels:
+        app: admission-webhook
+    spec:
+      serviceAccount: admission-webhook
+      containers:
+      - name: server
+        image: isim/admission-webhook:0.0.1
+        imagePullPolicy: Always
+        args:
+        - -debug
+        - "${DEBUG_ENABLED}"
+        ports:
+        - name: https
+          containerPort: 443
+        volumeMounts:
+        - name: tls
+          mountPath: /etc/secret
+          readOnly: true
+      volumes:
+      - name: tls
+        secret:
+          secretName: admission-webhook
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: admission-webhook-configuration
+  namespace: default
+  labels:
+    app: admission-webhook
+webhooks:
+  - name: admission-webhook.example.org
+    clientConfig:
+      service:
+        name: admission-webhook
+        namespace: default
+        path: "/"
+      caBundle: ${CA_BUNDLE}
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
