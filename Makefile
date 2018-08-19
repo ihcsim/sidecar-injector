@@ -1,8 +1,8 @@
 VERSION ?= 0.0.1
 DEBUG_ENABLED ?= false
 
+.PHONY: test
 test:
-	cd cmd/server
 	go test -v -cover -race ./...
 
 build:

@@ -26,6 +26,11 @@ To enabled debug mode, run:
 $ DEBUG_ENABLED=true make deploy
 ```
 
+To execute the unit tests, run:
+```
+$ make test
+```
+
 ## TLS
 All the TLS artifacts in the `tls` folder are self-signed examples.
 

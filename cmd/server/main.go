@@ -4,18 +4,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
+	webhook "github.com/ihcsim/admission-webhook"
 	"github.com/sirupsen/logrus"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 var (
@@ -27,8 +22,6 @@ var (
 	log = logrus.New()
 
 	server = tlsServer
-
-	errNilAdmissionReviewInput = fmt.Errorf("AdmissionReview input object can't be nil")
 )
 
 func init() {
@@ -82,7 +75,8 @@ func serve(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	response := mutate(data)
+	webhook := webhook.New()
+	response := webhook.Mutate(data)
 	responseJSON, err := json.Marshal(response)
 	if err != nil {
 		handleRequestError(res, err, http.StatusInternalServerError, requestLogger)
@@ -94,80 +88,6 @@ func serve(res http.ResponseWriter, req *http.Request) {
 		handleRequestError(res, err, http.StatusInternalServerError, requestLogger)
 		return
 	}
-}
-
-func mutate(data []byte) *admissionv1beta1.AdmissionReview {
-	admissionReview, err := decode(data)
-	if err != nil {
-		log.Info("Failed to decode data. Reason: ", err)
-		admissionReview.Response = &admissionv1beta1.AdmissionResponse{
-			UID: admissionReview.Request.UID,
-			Result: &metav1.Status{
-				Message: err.Error(),
-			},
-		}
-		return admissionReview
-	}
-
-	admissionResponse, err := inject(admissionReview)
-	if err != nil {
-		admissionReview.Response = &admissionv1beta1.AdmissionResponse{
-			UID: admissionReview.Request.UID,
-			Result: &metav1.Status{
-				Message: err.Error(),
-			},
-		}
-		return admissionReview
-	}
-	admissionReview.Response = admissionResponse
-	admissionReview.Response.UID = admissionReview.Request.UID
-
-	requestJSON, _ := json.Marshal(admissionReview.Request)
-	log.Debugf("Admission request: %s", requestJSON)
-
-	responseJSON, _ := json.Marshal(admissionReview.Response)
-	log.Debugf("Admission response: %s", responseJSON)
-
-	return admissionReview
-}
-
-func decode(data []byte) (*admissionv1beta1.AdmissionReview, error) {
-	var (
-		admissionReview = admissionv1beta1.AdmissionReview{}
-		scheme          = runtime.NewScheme()
-		codecs          = serializer.NewCodecFactory(scheme)
-		deserializer    = codecs.UniversalDeserializer()
-	)
-
-	if _, _, err := deserializer.Decode(data, nil, &admissionReview); err != nil {
-		return &admissionReview, err
-	}
-
-	return &admissionReview, nil
-}
-
-func inject(ar *admissionv1beta1.AdmissionReview) (*admissionv1beta1.AdmissionResponse, error) {
-	if ar == nil {
-		return nil, errNilAdmissionReviewInput
-	}
-
-	request := ar.Request
-	var pod corev1.Pod
-	if err := json.Unmarshal(request.Object.Raw, &pod); err != nil {
-		return nil, err
-	}
-
-	var (
-		patch     = []byte(`Hello World`)
-		patchType = admissionv1beta1.PatchTypeJSONPatch
-	)
-	admissionResponse := &admissionv1beta1.AdmissionResponse{
-		Allowed:   true,
-		Patch:     patch,
-		PatchType: &patchType,
-	}
-
-	return admissionResponse, nil
 }
 
 func tlsServer(port, certFile, keyFile string) (*http.Server, error) {
