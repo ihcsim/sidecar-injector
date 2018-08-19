@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -26,6 +27,8 @@ var (
 	log = logrus.New()
 
 	server = tlsServer
+
+	errNilAdmissionReviewInput = fmt.Errorf("AdmissionReview input object can't be nil")
 )
 
 func init() {
@@ -72,8 +75,12 @@ func serve(res http.ResponseWriter, req *http.Request) {
 			handleRequestError(res, err, http.StatusBadRequest, requestLogger)
 			return
 		}
+		requestLogger.Debugf("HTTP Request body: %s", data)
 	}
-	requestLogger.Debugf("HTTP Request body: %s", data)
+
+	if len(data) == 0 {
+		return
+	}
 
 	response := mutate(data)
 	responseJSON, err := json.Marshal(response)
@@ -140,6 +147,10 @@ func decode(data []byte) (*admissionv1beta1.AdmissionReview, error) {
 }
 
 func inject(ar *admissionv1beta1.AdmissionReview) (*admissionv1beta1.AdmissionResponse, error) {
+	if ar == nil {
+		return nil, errNilAdmissionReviewInput
+	}
+
 	request := ar.Request
 	var pod corev1.Pod
 	if err := json.Unmarshal(request.Object.Raw, &pod); err != nil {

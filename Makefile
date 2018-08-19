@@ -1,6 +1,10 @@
 VERSION ?= 0.0.1
 DEBUG_ENABLED ?= false
 
+test:
+	cd cmd/server
+	go test -v -cover -race ./...
+
 build:
 	docker build --rm \
 		--build-arg BUILD_DATE="`date +'%Y-%m-%d %T %z'`" \
