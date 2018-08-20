@@ -63,3 +63,20 @@ func FixturePod(prefix, filename string) (*corev1.Pod, error) {
 
 	return &pod, nil
 }
+
+// FixtureContainer returns the content of the specified file as a Container type. An error will be returned if:
+// i. the file doesn't exist in the 'test/data' folder or
+// ii. the file content isn't a valid JSON structure that can be unmarshalled into Cnotainer type
+func FixtureContainer(prefix, filename string) (*corev1.Container, error) {
+	b, err := ioutil.ReadFile(filepath.Join(prefix, "test", "data", filename))
+	if err != nil {
+		return nil, err
+	}
+
+	var container corev1.Container
+	if err := json.Unmarshal(b, &container); err != nil {
+		return nil, err
+	}
+
+	return &container, nil
+}
