@@ -76,6 +76,7 @@ func serve(res http.ResponseWriter, req *http.Request) {
 	}
 
 	webhook := webhook.New()
+	webhook.SetLogLevel(log.Level)
 	response := webhook.Mutate(data)
 	responseJSON, err := json.Marshal(response)
 	if err != nil {

@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -113,4 +114,30 @@ func TestInject(t *testing.T) {
 			t.Errorf("Mismatch content\nExpected: %+v\nActual: %+v", expected, actual)
 		}
 	})
+}
+
+func TestIgnore(t *testing.T) {
+	webhook := New()
+
+	var testCases = []struct {
+		filename string
+		expected bool
+	}{
+		{filename: "pod-injection-enabled-00.json", expected: false},
+		{filename: "pod-injection-enabled-01.json", expected: false},
+		{filename: "pod-injection-disabled.json", expected: true},
+	}
+
+	for id, testCase := range testCases {
+		t.Run(fmt.Sprintf("%d", id), func(t *testing.T) {
+			pod, err := test.FixturePod(".", testCase.filename)
+			if err != nil {
+				t.Fatal("Unexpected error: ", err)
+			}
+
+			if actual := webhook.ignore(pod); actual != testCase.expected {
+				t.Errorf("Boolean mismatch. Expected: %t. Actual: %t", testCase.expected, actual)
+			}
+		})
+	}
 }

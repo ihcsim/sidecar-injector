@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // FixtureHTTPRequestBody returns the content of the specified file as a slice of bytes.
@@ -22,26 +23,43 @@ func FixtureAdmissionReview(filename, prefix string) (*admissionv1beta1.Admissio
 	if err != nil {
 		return nil, err
 	}
-	var expected admissionv1beta1.AdmissionReview
-	if err := json.Unmarshal(b, &expected); err != nil {
+	var admissionReview admissionv1beta1.AdmissionReview
+	if err := json.Unmarshal(b, &admissionReview); err != nil {
 		return nil, err
 	}
 
-	return &expected, nil
+	return &admissionReview, nil
 }
 
 // FixtureAdmissionResponse returns the content of the specified file as an AdmissionResponse type. An error will be returned if:
 // i. the file doesn't exist in the 'test/data' folder or
-// ii. the file content isn't a valid JSON structure that can be unmarshalled into AdmissionResponse type,
+// ii. the file content isn't a valid JSON structure that can be unmarshalled into AdmissionResponse type
 func FixtureAdmissionResponse(prefix string) (*admissionv1beta1.AdmissionResponse, error) {
 	b, err := ioutil.ReadFile(filepath.Join(prefix, "test", "data", "admission-response.json"))
 	if err != nil {
 		return nil, err
 	}
-	var expected admissionv1beta1.AdmissionResponse
-	if err := json.Unmarshal(b, &expected); err != nil {
+	var admissionResponse admissionv1beta1.AdmissionResponse
+	if err := json.Unmarshal(b, &admissionResponse); err != nil {
 		return nil, err
 	}
 
-	return &expected, nil
+	return &admissionResponse, nil
+}
+
+// FixturePod returns the content of the specified file as an Pod type. An error will be returned if:
+// i. the file doesn't exist in the 'test/data' folder or
+// ii. the file content isn't a valid JSON structure that can be unmarshalled into Pod type
+func FixturePod(prefix, filename string) (*corev1.Pod, error) {
+	b, err := ioutil.ReadFile(filepath.Join(prefix, "test", "data", filename))
+	if err != nil {
+		return nil, err
+	}
+
+	var pod corev1.Pod
+	if err := json.Unmarshal(b, &pod); err != nil {
+		return nil, err
+	}
+
+	return &pod, nil
 }
