@@ -7,14 +7,36 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 
+	webhook "github.com/ihcsim/admission-webhook"
 	"github.com/ihcsim/admission-webhook/test"
 	"github.com/sirupsen/logrus"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 )
+
+var testServer *WebhookServer
+
+func TestMain(m *testing.M) {
+	// mock out the k8s clientset constructor
+	webhook.NewClient = test.NewFakeClient
+
+	// create a webhook which uses its fake client to seed the sidecar configmap
+	w, err := initWebhookWithConfigMap()
+	if err != nil {
+		panic(err)
+	}
+
+	log := logrus.New()
+	log.SetOutput(ioutil.Discard)
+	logger := logrus.NewEntry(log)
+	testServer = &WebhookServer{nil, w, logger}
+
+	os.Exit(m.Run())
+}
 
 func TestServe(t *testing.T) {
 	t.Run("With Empty HTTP Request Body", func(t *testing.T) {
@@ -22,7 +44,7 @@ func TestServe(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/", in)
 
 		recorder := httptest.NewRecorder()
-		serve(recorder, request)
+		testServer.serve(recorder, request)
 
 		if recorder.Code != http.StatusOK {
 			t.Errorf("HTTP response status mismatch. Expected: %d. Actual: %d", http.StatusOK, recorder.Code)
@@ -43,7 +65,7 @@ func TestServe(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/", in)
 
 		recorder := httptest.NewRecorder()
-		serve(recorder, request)
+		testServer.serve(recorder, request)
 
 		if recorder.Code != http.StatusOK {
 			t.Errorf("HTTP response status mismatch. Expected: %d. Actual: %d", http.StatusOK, recorder.Code)
@@ -70,13 +92,9 @@ func TestHandleRequestError(t *testing.T) {
 		errMsg   = "Some test error"
 		recorder = httptest.NewRecorder()
 		err      = fmt.Errorf(errMsg)
-		logger   = logrus.New()
 	)
 
-	logger.SetOutput(ioutil.Discard)
-	requestLogger := logrus.NewEntry(logger)
-
-	handleRequestError(recorder, err, http.StatusInternalServerError, requestLogger)
+	testServer.handleRequestError(recorder, err, http.StatusInternalServerError)
 
 	if recorder.Code != http.StatusInternalServerError {
 		t.Errorf("HTTP response status mismatch. Expected: %d. Actual: %d", http.StatusInternalServerError, recorder.Code)
@@ -85,4 +103,23 @@ func TestHandleRequestError(t *testing.T) {
 	if strings.TrimSpace(recorder.Body.String()) != errMsg {
 		t.Errorf("HTTP response body mismatch. Expected: %q. Actual: %q", errMsg, recorder.Body.String())
 	}
+}
+
+func initWebhookWithConfigMap() (*webhook.Webhook, error) {
+	fixture, err := webhook.New()
+	if err != nil {
+		return nil, err
+	}
+
+	// seed the sidecar configmap with the fake client
+	configMap, err := test.FixtureConfigMap("../..", "sidecar-configmap.json")
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := fixture.Client.CoreV1().ConfigMaps(test.DefaultNamespace).Create(configMap); err != nil {
+		return nil, err
+	}
+
+	return fixture, nil
 }

@@ -2,7 +2,7 @@ FROM golang:1.10.2 as builder
 MAINTAINER Ivan Sim
 WORKDIR /go/src/github.com/ihcsim/admission-webhook
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -o server cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o server github.com/ihcsim/admission-webhook/cmd/server
 
 FROM alpine:latest
 MAINTAINER Ivan Sim

@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	patchPathContainer  = "/spec/containers/-"
+	patchPathContainer  = "/spec/containers/1"
 	patchPathAnnotation = "/metadata/annotations"
 )
 
@@ -43,5 +43,5 @@ func (p *PodPatch) addAnnotationPatch() {
 type patchOp struct {
 	Op    string      `json:"op"`
 	Path  string      `json:"path"`
-	Value interface{} `json:value,omitempty`
+	Value interface{} `json:"value",omitempty`
 }

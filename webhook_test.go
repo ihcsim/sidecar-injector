@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -9,6 +10,22 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var webhook *Webhook
+
+func TestMain(m *testing.M) {
+	// mock out the k8s clientset constructor
+	NewClient = test.NewFakeClient
+
+	// create a webhook which uses its fake client to seed the sidecar configmap
+	var err error
+	webhook, err = initWebhookWithConfigMap()
+	if err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestMutate(t *testing.T) {
 	data, err := test.FixtureHTTPRequestBody("http-request-body-valid.json", ".")
@@ -21,7 +38,10 @@ func TestMutate(t *testing.T) {
 		t.Fatal("Unexpected error: ", err)
 	}
 
-	webhook := New()
+	if err != nil {
+		t.Fatal("Unexpected error: ", err)
+	}
+
 	actual := webhook.Mutate(data)
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Content mismatch\nExpected: %+v\nActual: %+v", expected, actual)
@@ -29,8 +49,6 @@ func TestMutate(t *testing.T) {
 }
 
 func TestDecode(t *testing.T) {
-	webhook := New()
-
 	t.Run("With Nil Input", func(t *testing.T) {
 		actual, err := webhook.decode(nil)
 		if err != nil {
@@ -81,8 +99,6 @@ func TestDecode(t *testing.T) {
 }
 
 func TestInject(t *testing.T) {
-	webhook := New()
-
 	t.Run("With Nil input", func(t *testing.T) {
 		_, err := webhook.inject(nil)
 		if err == nil {
@@ -117,8 +133,6 @@ func TestInject(t *testing.T) {
 }
 
 func TestIgnore(t *testing.T) {
-	webhook := New()
-
 	var testCases = []struct {
 		filename string
 		expected bool
@@ -140,4 +154,40 @@ func TestIgnore(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSidecarFromConfigMap(t *testing.T) {
+	expected, err := test.FixtureContainer(".", "sidecar-container.json")
+	if err != nil {
+		t.Fatal("Unexpected error: ", err)
+	}
+
+	opt := metav1.GetOptions{}
+	actual, err := webhook.sidecarFromConfigMap(configMapSidecar, defaultNamespace, opt)
+	if err != nil {
+		t.Fatal("Unexpected error: ", err)
+	}
+
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Content mismatch\nExpected: %+v\nActual: %+v", expected, actual)
+	}
+}
+
+func initWebhookWithConfigMap() (*Webhook, error) {
+	fixture, err := New()
+	if err != nil {
+		return nil, err
+	}
+
+	// seed the sidecar configmap with the fake client
+	configMap, err := test.FixtureConfigMap(".", "sidecar-configmap.json")
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := fixture.Client.CoreV1().ConfigMaps(test.DefaultNamespace).Create(configMap); err != nil {
+		return nil, err
+	}
+
+	return fixture, nil
 }

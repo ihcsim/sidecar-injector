@@ -1,0 +1,8 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: sidecar-spec
+  labels:
+    app: admission-webhook
+data:
+  sidecar.json: "{\"name\": \"nginx\", \"image\": \"nginx\", \"ports\": [{\"name\": \"http\", \"containerPort\": 80}]}"

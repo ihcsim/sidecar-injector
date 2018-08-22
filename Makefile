@@ -12,6 +12,7 @@ build:
 		--build-arg VCS_URL="https://github.com/ihcsim/admission-webhook" \
 		--build-arg VERSION="$(VERSION)" \
 		-t isim/admission-webhook:$(VERSION) .
+	rm -f cmd/server/server
 
 push:
 	docker push isim/admission-webhook:$(VERSION)
@@ -35,6 +36,7 @@ TLS_KEY=$(shell cat tls/server/server.key | base64 -w 0)
 
 deploy:
 	sed -e s/\$$\{CA_BUNDLE\}/"$(CA_BUNDLE)"/ -e s/\$$\{TLS_CERT\}/"$(TLS_CERT)"/ -e s/\$$\{TLS_KEY\}/"$(TLS_KEY)"/ -e s/\$$\{DEBUG_ENABLED\}/${DEBUG_ENABLED}/ charts/deployment.yaml | kubectl apply -f -
+	kubectl apply -f charts/sidecar-configmap.yaml
 
 purge:
 	kubectl delete all -l app=admission-webhook

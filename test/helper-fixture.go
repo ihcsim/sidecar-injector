@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const DefaultNamespace = "default"
+
 // FixtureHTTPRequestBody returns the content of the specified file as a slice of bytes.
 // If the file doesn't exist in the 'test/data' folder, an error will be returned.
 func FixtureHTTPRequestBody(filename, prefix string) ([]byte, error) {
@@ -66,7 +68,7 @@ func FixturePod(prefix, filename string) (*corev1.Pod, error) {
 
 // FixtureContainer returns the content of the specified file as a Container type. An error will be returned if:
 // i. the file doesn't exist in the 'test/data' folder or
-// ii. the file content isn't a valid JSON structure that can be unmarshalled into Cnotainer type
+// ii. the file content isn't a valid JSON structure that can be unmarshalled into Container type
 func FixtureContainer(prefix, filename string) (*corev1.Container, error) {
 	b, err := ioutil.ReadFile(filepath.Join(prefix, "test", "data", filename))
 	if err != nil {
@@ -79,4 +81,21 @@ func FixtureContainer(prefix, filename string) (*corev1.Container, error) {
 	}
 
 	return &container, nil
+}
+
+// FixtureConfigMap returns the content of the specified file as a ConfigMap type. An error will be returned if:
+// i. the file doesn't exist in the 'test/data' folder or
+// ii. the file content isn't a valid JSON structure that can be unmarshalled into ConfigMap type
+func FixtureConfigMap(prefix, filename string) (*corev1.ConfigMap, error) {
+	b, err := ioutil.ReadFile(filepath.Join(prefix, "test", "data", filename))
+	if err != nil {
+		return nil, err
+	}
+
+	var configMap corev1.ConfigMap
+	if err := json.Unmarshal(b, &configMap); err != nil {
+		return nil, err
+	}
+
+	return &configMap, nil
 }
