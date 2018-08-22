@@ -1,5 +1,6 @@
 VERSION ?= 0.0.1
 DEBUG_ENABLED ?= false
+IMAGE_REPO ?= isim
 
 .PHONY: test
 test:
@@ -9,13 +10,16 @@ build:
 	docker build --rm \
 		--build-arg BUILD_DATE="`date +'%Y-%m-%d %T %z'`" \
 		--build-arg VCS_REF=`git rev-parse --short HEAD` \
-		--build-arg VCS_URL="https://github.com/ihcsim/admission-webhook" \
+		--build-arg VCS_URL="https://github.com/ihcsim/sidecar-injector" \
 		--build-arg VERSION="$(VERSION)" \
-		-t isim/admission-webhook:$(VERSION) .
+		-t $(IMAGE_REPO)/sidecar-injector:$(VERSION) .
 	rm -f cmd/server/server
 
 push:
-	docker push isim/admission-webhook:$(VERSION)
+	docker push $(IMAGE_REPO)/sidecar-injector:$(VERSION)
+
+.PHONY: tls tls/ca tls/server
+tls: tls/ca tls/server
 
 tls/ca:
 	rm -rf tls/ca
@@ -39,4 +43,4 @@ deploy:
 	kubectl apply -f charts/sidecar-configmap.yaml
 
 purge:
-	kubectl delete all -l app=admission-webhook
+	kubectl delete all -l app=sidecar-injector

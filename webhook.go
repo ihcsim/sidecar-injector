@@ -1,4 +1,4 @@
-package webhook
+package injector
 
 import (
 	"encoding/json"

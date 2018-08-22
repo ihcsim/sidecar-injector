@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	webhook "github.com/ihcsim/admission-webhook"
-	"github.com/ihcsim/admission-webhook/test"
+	webhook "github.com/ihcsim/sidecar-injector"
+	"github.com/ihcsim/sidecar-injector/test"
 	"github.com/sirupsen/logrus"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 )

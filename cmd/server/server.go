@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	webhook "github.com/ihcsim/admission-webhook"
+	webhook "github.com/ihcsim/sidecar-injector"
 	"github.com/sirupsen/logrus"
 )
 

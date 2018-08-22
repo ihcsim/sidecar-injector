@@ -4,7 +4,7 @@
   "metadata": {
     "name": "sidecar-spec",
     "labels": {
-      "app": "admission-webhook"
+      "app": "sidecar-injector"
     }
   },
   "data": {

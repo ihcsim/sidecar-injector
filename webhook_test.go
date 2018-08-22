@@ -1,4 +1,4 @@
-package webhook
+package injector
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ihcsim/admission-webhook/test"
+	"github.com/ihcsim/sidecar-injector/test"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

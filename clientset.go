@@ -1,4 +1,4 @@
-package webhook
+package injector
 
 import (
 	"k8s.io/client-go/kubernetes"

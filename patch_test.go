@@ -1,11 +1,11 @@
-package webhook
+package injector
 
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
 
-	"github.com/ihcsim/admission-webhook/test"
+	"github.com/ihcsim/sidecar-injector/test"
 )
 
 func TestPodPatch(t *testing.T) {
