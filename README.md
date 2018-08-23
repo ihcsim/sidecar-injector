@@ -1,4 +1,7 @@
 # Sidecar Injector
+
+[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/ihcsim/ihcsim%2Fsidecar-injector%2Fsidecar-injector?branch=master&type=cf-1)]( https://g.codefresh.io/repositories/ihcsim/sidecar-injector/builds?filter=trigger:build;branch:master;service:5b7e1d9e5904b8378771a864~sidecar-injector)
+
 This project implements a Kubernetes [admission webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks) that injects a Nginx sidecar container to all pods on-creation.
 
 * [Getting Started](#getting-started)

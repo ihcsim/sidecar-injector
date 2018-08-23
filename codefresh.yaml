@@ -1,0 +1,23 @@
+version: '1.0'
+steps:
+  test:
+    title: Running unit test
+    image: golang:1.10-stretch
+    working_directory: ${{main_clone}}
+    commands:
+    - mkdir -p /go/src/github.com/${{CF_REPO_OWNER}}
+    - ln -s /codefresh/volume/${{CF_REPO_NAME}} /go/src/github.com/${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+    - cd /go/src/github.com/${{CF_REPO_OWNER}}/${{CF_REPO_NAME}} && make test
+
+  build:
+    title: Building Image
+    type: build
+    image_name: isim/sidecar-injector
+    working_directory: ${{main_clone}}
+    dockerfile: Dockerfile
+
+  push:
+    title: Push To DockerHub
+    type: push
+    candidate: '${{build}}'
+    tag: '${{CF_BRANCH}}'
