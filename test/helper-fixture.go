@@ -36,8 +36,8 @@ func FixtureAdmissionReview(filename, prefix string) (*admissionv1beta1.Admissio
 // FixtureAdmissionResponse returns the content of the specified file as an AdmissionResponse type. An error will be returned if:
 // i. the file doesn't exist in the 'test/data' folder or
 // ii. the file content isn't a valid JSON structure that can be unmarshalled into AdmissionResponse type
-func FixtureAdmissionResponse(prefix string) (*admissionv1beta1.AdmissionResponse, error) {
-	b, err := ioutil.ReadFile(filepath.Join(prefix, "test", "data", "admission-response.json"))
+func FixtureAdmissionResponse(prefix, filename string) (*admissionv1beta1.AdmissionResponse, error) {
+	b, err := ioutil.ReadFile(filepath.Join(prefix, "test", "data", filename))
 	if err != nil {
 		return nil, err
 	}

@@ -116,7 +116,28 @@ func TestInject(t *testing.T) {
 			t.Fatal("Unexpected error: ", err)
 		}
 
-		expected, err := test.FixtureAdmissionResponse(".")
+		expected, err := test.FixtureAdmissionResponse(".", "admission-response.json")
+		if err != nil {
+			t.Fatal("Unexpected error: ", err)
+		}
+
+		actual, err := webhook.inject(admissionReview)
+		if err != nil {
+			t.Fatal("Unexpected error: ", err)
+		}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("Mismatch content\nExpected: %+v\nActual: %+v", expected, actual)
+		}
+	})
+
+	t.Run("With Valid Admission Review (ignore pod)", func(t *testing.T) {
+		admissionReview, err := test.FixtureAdmissionReview("admission-review-request-only-ignore-pod.json", ".")
+		if err != nil {
+			t.Fatal("Unexpected error: ", err)
+		}
+
+		expected, err := test.FixtureAdmissionResponse(".", "admission-response-ignore-pod.json")
 		if err != nil {
 			t.Fatal("Unexpected error: ", err)
 		}

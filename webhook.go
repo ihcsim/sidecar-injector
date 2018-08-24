@@ -78,7 +78,6 @@ func (w *Webhook) Mutate(data []byte) *admissionv1beta1.AdmissionReview {
 		return admissionReview
 	}
 	admissionReview.Response = admissionResponse
-	admissionReview.Response.UID = admissionReview.Request.UID
 
 	requestJSON, _ := json.Marshal(admissionReview.Request)
 	w.logger.Debugf("Admission request: %s", requestJSON)
@@ -111,6 +110,7 @@ func (w *Webhook) inject(ar *admissionv1beta1.AdmissionReview) (*admissionv1beta
 
 	if w.ignore(&pod) {
 		return &admissionv1beta1.AdmissionResponse{
+			UID:     ar.Request.UID,
 			Allowed: true,
 		}, nil
 	}
@@ -133,6 +133,7 @@ func (w *Webhook) inject(ar *admissionv1beta1.AdmissionReview) (*admissionv1beta
 
 	patchType := admissionv1beta1.PatchTypeJSONPatch
 	admissionResponse := &admissionv1beta1.AdmissionResponse{
+		UID:       ar.Request.UID,
 		Allowed:   true,
 		Patch:     patchJSON,
 		PatchType: &patchType,
